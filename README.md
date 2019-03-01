@@ -39,8 +39,9 @@ kubectl --kubeconfig *-kubeconfig.yaml get nodes
 
 The files that are created are:
 
-* `$NAME-cloud-init.yaml`
 * `$NAME-agent-cloud-init.yaml`
+* `$NAME-cloud-init.yaml`
 * `$NAME-kubeconfig.yaml`
+* `$NAME-node-token`
 
 You can clean up the instances by running `multipass delete k3s-server-$NAME-1 --purge` and `multipass delete k3s-agent-$NAME-{1,2,3}` or (**WARNING** this deletes and purges all instances): `multipass delete --all --purge`
