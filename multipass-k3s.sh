@@ -10,11 +10,14 @@ SERVER_COUNT_MACHINE="1"
 # How many machines to create
 AGENT_COUNT_MACHINE="1"
 # How many CPUs to allocate to each machine
-CPU_MACHINE="1"
+SERVER_CPU_MACHINE="1"
+AGENT_CPU_MACHINE="1"
 # How much disk space to allocate to each machine
-DISK_MACHINE="5G"
+SERVER_DISK_MACHINE="3G"
+AGENT_DISK_MACHINE="3G"
 # How much memory to allocate to each machine
-MEMORY_MACHINE="1G"
+SERVER_MEMORY_MACHINE="512M"
+AGENT_MEMORY_MACHINE="256M"
 
 ## Nothing to change after this line
 if [ -x "$(command -v multipass.exe)" > /dev/null 2>&1 ]; then
@@ -60,8 +63,8 @@ echo "$SERVER_CLOUDINIT_TEMPLATE" > "${NAME}-cloud-init.yaml"
 echo "Cloud-init is created at ${NAME}-cloud-init.yaml"
 
 for i in $(eval echo "{1..$SERVER_COUNT_MACHINE}"); do
-    echo "Running $MULTIPASSCMD launch --cpus $CPU_MACHINE --disk $DISK_MACHINE --mem $MEMORY_MACHINE $IMAGE --name k3s-server-$NAME-$i --cloud-init ${NAME}-cloud-init.yaml"                                                                                                                                           
-    $MULTIPASSCMD launch --cpus $CPU_MACHINE --disk $DISK_MACHINE --mem $MEMORY_MACHINE $IMAGE --name k3s-server-$NAME-$i --cloud-init "${NAME}-cloud-init.yaml"
+    echo "Running $MULTIPASSCMD launch --cpus $SERVER_CPU_MACHINE --disk $SERVER_DISK_MACHINE --mem $SERVER_MEMORY_MACHINE $IMAGE --name k3s-server-$NAME-$i --cloud-init ${NAME}-cloud-init.yaml"                                                                                                                                           
+    $MULTIPASSCMD launch --cpus $SERVER_CPU_MACHINE --disk $SERVER_DISK_MACHINE --mem $SERVER_MEMORY_MACHINE $IMAGE --name k3s-server-$NAME-$i --cloud-init "${NAME}-cloud-init.yaml"
     if [ $? -ne 0 ]; then
         echo "There was an error launching the instance"
         exit 1
@@ -85,8 +88,8 @@ echo "$AGENT_CLOUDINIT_TEMPLATE" | sed -e "s^__SERVER_URL__^$URL^" -e "s^__NODE_
 echo "Cloud-init is created at ${NAME}-agent-cloud-init.yaml"
 
 for i in $(eval echo "{1..$AGENT_COUNT_MACHINE}"); do
-    echo "Running $MULTIPASSCMD launch --cpus $CPU_MACHINE --disk $DISK_MACHINE --mem $MEMORY_MACHINE $IMAGE --name k3s-agent-$NAME-$i --cloud-init ${NAME}-agent-cloud-init.yaml"
-    $MULTIPASSCMD launch --cpus $CPU_MACHINE --disk $DISK_MACHINE --mem $MEMORY_MACHINE $IMAGE --name k3s-agent-$NAME-$i --cloud-init "${NAME}-agent-cloud-init.yaml"
+    echo "Running $MULTIPASSCMD launch --cpus $AGENT_CPU_MACHINE --disk $AGENT_DISK_MACHINE --mem $AGENT_MEMORY_MACHINE $IMAGE --name k3s-agent-$NAME-$i --cloud-init ${NAME}-agent-cloud-init.yaml"
+    $MULTIPASSCMD launch --cpus $AGENT_CPU_MACHINE --disk $AGENT_DISK_MACHINE --mem $AGENT_MEMORY_MACHINE $IMAGE --name k3s-agent-$NAME-$i --cloud-init "${NAME}-agent-cloud-init.yaml"
     if [ $? -ne 0 ]; then
         echo "There was an error launching the instance"
         exit 1
@@ -98,8 +101,8 @@ for i in $(eval echo "{1..$AGENT_COUNT_MACHINE}"); do
     echo "Node k3s-agent-$NAME-$i is Ready on k3s-server-${NAME}-1"
 done
 
-$MULTIPASSCMD copy-files k3s-server-$NAME-1:/etc/rancher/k3s/k3s.yaml $NAME-kubeconfig.yaml
-sed -i'' "/^[[:space:]]*server:/ s_:.*_: \"https://$(echo $SERVER_IP | sed -e 's/[[:space:]]//g'):6443\"_" $NAME-kubeconfig.yaml
+$MULTIPASSCMD copy-files k3s-server-$NAME-1:/etc/rancher/k3s/k3s.yaml $NAME-kubeconfig-orig.yaml
+sed "/^[[:space:]]*server:/ s_:.*_: \"https://$(echo $SERVER_IP | sed -e 's/[[:space:]]//g'):6443\"_" $NAME-kubeconfig-orig.yaml > $NAME-kubeconfig.yaml
 
 echo "k3s setup finished"
 $MULTIPASSCMD exec k3s-server-$NAME-1 -- k3s kubectl get nodes
