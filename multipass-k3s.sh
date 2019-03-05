@@ -99,7 +99,7 @@ for i in $(eval echo "{1..$AGENT_COUNT_MACHINE}"); do
 done
 
 $MULTIPASSCMD copy-files k3s-server-$NAME-1:/etc/rancher/k3s/k3s.yaml $NAME-kubeconfig.yaml
-sed -i '' "/^[[:space:]]*server:/ s_:.*_: \"https://$SERVER_IP:6443\"_" $NAME-kubeconfig.yaml
+sed -i'' "/^[[:space:]]*server:/ s_:.*_: \"https://$(echo $SERVER_IP | sed -e 's/[[:space:]]//g'):6443\"_" $NAME-kubeconfig.yaml
 
 echo "k3s setup finished"
 $MULTIPASSCMD exec k3s-server-$NAME-1 -- k3s kubectl get nodes
