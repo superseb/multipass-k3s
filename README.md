@@ -20,11 +20,10 @@ This will (defaults):
 
 * Generate random name for your cluster (configurable using `NAME`)
 * Create cloud-init file for server to install k3s server.
-* Create one instance for server with 1 CPU (`CPU_MACHINE`), 5G disk (`DISK_MACHINE`) and 1G of memory (`MEMORY_MACHINE`) using Ubuntu xenial (`IMAGE`)
+* Create one instance for server with 1 CPU (`SERVER_CPU_MACHINE`), 3G disk (`SERVER_DISK_MACHINE`) and 512M of memory (`SERVER_MEMORY_MACHINE`) using Ubuntu xenial (`IMAGE`)
 * Create cloud-init file for agent to join the cluster.
-* Create one machine (configurable using `AGENT_COUNT_MACHINE`) with 1 CPU (`CPU_MACHINE`), 5G disk (`DISK_MACHINE`) and 1G of memory (`MEMORY_MACHINE`) using Ubuntu xenial (`IMAGE`)
+* Create one machine (configurable using `AGENT_COUNT_MACHINE`) with 1 CPU (`AGENT_CPU_MACHINE`), 3G disk (`AGENT_DISK_MACHINE`) and 256M of memory (`AGENT_MEMORY_MACHINE`) using Ubuntu xenial (`IMAGE`)
 * Wait for the nodes to be joined to the cluster
-
 
 ## Quickstart Ubuntu 16.04 droplet
 
