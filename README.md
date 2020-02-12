@@ -20,15 +20,15 @@ This will (defaults):
 
 * Generate random name for your cluster (configurable using `NAME`)
 * Create cloud-init file for server to install k3s server.
-* Create one instance for server with 1 CPU (`SERVER_CPU_MACHINE`), 3G disk (`SERVER_DISK_MACHINE`) and 512M of memory (`SERVER_MEMORY_MACHINE`) using Ubuntu xenial (`IMAGE`)
+* Create one instance for server with 2 CPU (`SERVER_CPU_MACHINE`), 10G disk (`SERVER_DISK_MACHINE`) and 1G of memory (`SERVER_MEMORY_MACHINE`) using Ubuntu bionic (`IMAGE`)
 * Create cloud-init file for agent to join the cluster.
-* Create one machine (configurable using `AGENT_COUNT_MACHINE`) with 1 CPU (`AGENT_CPU_MACHINE`), 3G disk (`AGENT_DISK_MACHINE`) and 256M of memory (`AGENT_MEMORY_MACHINE`) using Ubuntu xenial (`IMAGE`)
+* Create one machine (configurable using `AGENT_COUNT_MACHINE`) with 1 CPU (`AGENT_CPU_MACHINE`), 3G disk (`AGENT_DISK_MACHINE`) and 512M of memory (`AGENT_MEMORY_MACHINE`) using Ubuntu bionic (`IMAGE`)
 * Wait for the nodes to be joined to the cluster
 
-## Quickstart Ubuntu 16.04 droplet
+## Quickstart Ubuntu 18.04 droplet
 
 ```
-sudo snap install multipass --beta --classic
+sudo snap install multipass --classic
 wget https://raw.githubusercontent.com/superseb/multipass-k3s/master/multipass-k3s.sh
 bash multipass-k3s.sh
 curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
