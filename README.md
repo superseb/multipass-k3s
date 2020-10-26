@@ -1,4 +1,4 @@
-# k4s cluster on multipass instances
+# k3s cluster on multipass instances
 
 This script will create a configurable amount of instances using [multipass](https://github.com/CanonicalLtd/multipass/), install [k3s](https://github.com/rancher/k3s) server(s) (HA using embedded etcd), and add the agent instances to the cluster.
 
