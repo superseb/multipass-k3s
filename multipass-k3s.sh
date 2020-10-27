@@ -5,9 +5,9 @@
 NAME=""
 # Ubuntu image to use (xenial/bionic)
 IMAGE="focal"
-# How many machines to create
-SERVER_COUNT_MACHINE="1"
-# How many machines to create
+# How many additional server instances to create
+SERVER_COUNT_MACHINE="0"
+# How many agent instances to create
 AGENT_COUNT_MACHINE="1"
 # How many CPUs to allocate to each machine
 SERVER_CPU_MACHINE="2"
@@ -40,12 +40,12 @@ fi
 
 if [ -z $SERVER_TOKEN ]; then
     SERVER_TOKEN=$(cat /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1 | tr '[:upper:]' '[:lower:]')
-    echo "No cluster secret given, generated secret: ${SERVER_TOKEN}"
+    echo "No server token given, generated server token: ${SERVER_TOKEN}"
 fi
 
 if [ -z $AGENT_TOKEN ]; then
     AGENT_TOKEN=$(cat /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1 | tr '[:upper:]' '[:lower:]')
-    echo "No cluster secret given, generated secret: ${AGENT_TOKEN}"
+    echo "No agent token given, generated agent token: ${AGENT_TOKEN}"
 fi
 
 # Check if name is given or create random string
@@ -54,7 +54,7 @@ if [ -z $NAME ]; then
     echo "No name given, generated name: ${NAME}"
 fi
 
-echo "Creating cluster ${NAME} with ${SERVER_COUNT_MACHINE} servers and ${AGENT_COUNT_MACHINE} agents"
+echo "Creating cluster ${NAME} with $(( $SERVER_COUNT_MACHINE + 1 )) server(s) and ${AGENT_COUNT_MACHINE} agent(s)"
 
 # Prepare cloud-init
 # Cloud init template
@@ -67,6 +67,8 @@ EOM
 
 echo "$SERVER_INIT_CLOUDINIT_TEMPLATE" > "${NAME}-init-cloud-init.yaml"
 echo "Cloud-init is created at ${NAME}-init-cloud-init.yaml"
+
+echo "Creating initial server instance: k3s-server-${NAME}"
 
 echo "Running $MULTIPASSCMD launch --cpus $SERVER_CPU_MACHINE --disk $SERVER_DISK_MACHINE --mem $SERVER_MEMORY_MACHINE $IMAGE --name k3s-server-$NAME --cloud-init ${NAME}-init-cloud-init.yaml"
 $MULTIPASSCMD launch --cpus $SERVER_CPU_MACHINE --disk $SERVER_DISK_MACHINE --mem $SERVER_MEMORY_MACHINE $IMAGE --name k3s-server-$NAME --cloud-init "${NAME}-init-cloud-init.yaml"
@@ -83,61 +85,66 @@ echo "Node is Ready on k3s-server-${NAME}"
 SERVER_IP=$($MULTIPASSCMD info k3s-server-$NAME | grep IPv4 | awk '{ print $2 }')
 URL="https://$(echo $SERVER_IP | sed -e 's/[[:space:]]//g'):6443"
 
-read -r -d '' SERVER_CLOUDINIT_TEMPLATE << EOM
+# Create additional servers
+if [ "${SERVER_COUNT_MACHINE}" -gt 0 ]; then
+    read -r -d '' SERVER_CLOUDINIT_TEMPLATE << EOM
 #cloud-config
 
 runcmd:
  - '\curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=$CHANNEL K3S_TOKEN=$SERVER_TOKEN K3S_AGENT_TOKEN=$AGENT_TOKEN INSTALL_K3S_EXEC="server --server $URL" K3S_KUBECONFIG_MODE=644 sh -'
 EOM
 
-echo "$SERVER_CLOUDINIT_TEMPLATE" > "${NAME}-cloud-init.yaml"
+    echo "$SERVER_CLOUDINIT_TEMPLATE" > "${NAME}-cloud-init.yaml"
 
-# Create additional servers
-for i in $(eval echo "{1..$SERVER_COUNT_MACHINE}"); do
-    echo "Running $MULTIPASSCMD launch --cpus $SERVER_CPU_MACHINE --disk $SERVER_DISK_MACHINE --mem $SERVER_MEMORY_MACHINE $IMAGE --name k3s-server-$NAME-$i --cloud-init ${NAME}-cloud-init.yaml"
-    $MULTIPASSCMD launch --cpus $SERVER_CPU_MACHINE --disk $SERVER_DISK_MACHINE --mem $SERVER_MEMORY_MACHINE $IMAGE --name k3s-server-$NAME-$i --cloud-init "${NAME}-cloud-init.yaml"
-    if [ $? -ne 0 ]; then
-        echo "There was an error launching the instance"
-        exit 1
-    fi
+    echo "Creating ${SERVER_COUNT_MACHINE} additional server instances"
+    for i in $(eval echo "{1..$SERVER_COUNT_MACHINE}"); do
+        echo "Running $MULTIPASSCMD launch --cpus $SERVER_CPU_MACHINE --disk $SERVER_DISK_MACHINE --mem $SERVER_MEMORY_MACHINE $IMAGE --name k3s-server-$NAME-$i --cloud-init ${NAME}-cloud-init.yaml"
+        $MULTIPASSCMD launch --cpus $SERVER_CPU_MACHINE --disk $SERVER_DISK_MACHINE --mem $SERVER_MEMORY_MACHINE $IMAGE --name k3s-server-$NAME-$i --cloud-init "${NAME}-cloud-init.yaml"
+        if [ $? -ne 0 ]; then
+            echo "There was an error launching the instance"
+            exit 1
+        fi
 
-    echo "Checking for Node being Ready on k3s-server-${NAME}"
-    $MULTIPASSCMD exec k3s-server-$NAME-$i -- /bin/bash -c 'while [[ $(sudo k3s kubectl get nodes --no-headers 2>/dev/null | grep -c -v "NotReady") -eq 0 ]]; do sleep 2; done'
-    echo "Node is Ready on k3s-server-${NAME}-${i}"
-done
+        echo "Checking for Node being Ready on k3s-server-${NAME}"
+        $MULTIPASSCMD exec k3s-server-$NAME-$i -- /bin/bash -c 'while [[ $(sudo k3s kubectl get nodes --no-headers 2>/dev/null | grep -c -v "NotReady") -eq 0 ]]; do sleep 2; done'
+        echo "Node is Ready on k3s-server-${NAME}-${i}"
+    done
+fi
 
-# Prepare agent cloud-init
-# Cloud init template
-read -r -d '' AGENT_CLOUDINIT_TEMPLATE << EOM
+if [ "${AGENT_COUNT_MACHINE}" -gt 0 ]; then
+    # Prepare agent cloud-init
+    # Cloud init template
+    read -r -d '' AGENT_CLOUDINIT_TEMPLATE << EOM
 #cloud-config
 
 runcmd:
  - '\curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=$CHANNEL K3S_TOKEN=$AGENT_TOKEN K3S_URL=$URL sh -'
 EOM
 
-echo "$AGENT_CLOUDINIT_TEMPLATE" > "${NAME}-agent-cloud-init.yaml"
-echo "Cloud-init is created at ${NAME}-agent-cloud-init.yaml"
+    echo "$AGENT_CLOUDINIT_TEMPLATE" > "${NAME}-agent-cloud-init.yaml"
+    echo "Cloud-init is created at ${NAME}-agent-cloud-init.yaml"
 
-for i in $(eval echo "{1..$AGENT_COUNT_MACHINE}"); do
-    echo "Running $MULTIPASSCMD launch --cpus $AGENT_CPU_MACHINE --disk $AGENT_DISK_MACHINE --mem $AGENT_MEMORY_MACHINE $IMAGE --name k3s-agent-$NAME-$i --cloud-init ${NAME}-agent-cloud-init.yaml"
-    $MULTIPASSCMD launch --cpus $AGENT_CPU_MACHINE --disk $AGENT_DISK_MACHINE --mem $AGENT_MEMORY_MACHINE $IMAGE --name k3s-agent-$NAME-$i --cloud-init "${NAME}-agent-cloud-init.yaml"
-    if [ $? -ne 0 ]; then
-        echo "There was an error launching the instance"
-        exit 1
-    fi
-    echo "Checking for Node k3s-agent-$NAME-$i being registered"
-    $MULTIPASSCMD exec k3s-server-$NAME-1 -- bash -c "until sudo k3s kubectl get nodes --no-headers | grep -c k3s-agent-$NAME-1 >/dev/null; do sleep 2; done" 
-    echo "Checking for Node k3s-agent-$NAME-$i being Ready"
-    $MULTIPASSCMD exec k3s-server-$NAME-1 -- bash -c "until sudo k3s kubectl get nodes --no-headers | grep k3s-agent-$NAME-1 | grep -c -v NotReady >/dev/null; do sleep 2; done" 
-    echo "Node k3s-agent-$NAME-$i is Ready on k3s-server-${NAME}-1"
-done
+    for i in $(eval echo "{1..$AGENT_COUNT_MACHINE}"); do
+        echo "Running $MULTIPASSCMD launch --cpus $AGENT_CPU_MACHINE --disk $AGENT_DISK_MACHINE --mem $AGENT_MEMORY_MACHINE $IMAGE --name k3s-agent-$NAME-$i --cloud-init ${NAME}-agent-cloud-init.yaml"
+        $MULTIPASSCMD launch --cpus $AGENT_CPU_MACHINE --disk $AGENT_DISK_MACHINE --mem $AGENT_MEMORY_MACHINE $IMAGE --name k3s-agent-$NAME-$i --cloud-init "${NAME}-agent-cloud-init.yaml"
+        if [ $? -ne 0 ]; then
+            echo "There was an error launching the instance"
+            exit 1
+       fi
+        echo "Checking for Node k3s-agent-$NAME-$i being registered"
+        $MULTIPASSCMD exec k3s-server-$NAME -- bash -c "until sudo k3s kubectl get nodes --no-headers | grep -c k3s-agent-$NAME-$i >/dev/null; do sleep 2; done" 
+        echo "Checking for Node k3s-agent-$NAME-$i being Ready"
+        $MULTIPASSCMD exec k3s-server-$NAME -- bash -c "until sudo k3s kubectl get nodes --no-headers | grep k3s-agent-$NAME-$i | grep -c -v NotReady >/dev/null; do sleep 2; done"
+        echo "Node k3s-agent-$NAME-$i is Ready on k3s-server-${NAME}"
+    done
+fi
 
-$MULTIPASSCMD copy-files k3s-server-$NAME-1:/etc/rancher/k3s/k3s.yaml $NAME-kubeconfig-orig.yaml
+$MULTIPASSCMD copy-files k3s-server-$NAME:/etc/rancher/k3s/k3s.yaml $NAME-kubeconfig-orig.yaml
 sed "/^[[:space:]]*server:/ s_:.*_: \"https://$(echo $SERVER_IP | sed -e 's/[[:space:]]//g'):6443\"_" $NAME-kubeconfig-orig.yaml > $NAME-kubeconfig.yaml
 
 echo "k3s setup finished"
-$MULTIPASSCMD exec k3s-server-$NAME-1 -- sudo k3s kubectl get nodes
+$MULTIPASSCMD exec k3s-server-$NAME -- sudo k3s kubectl get nodes
 echo "You can now use the following command to connect to your cluster"
-echo "$MULTIPASSCMD exec k3s-server-${NAME}-1 -- sudo k3s kubectl get nodes"
+echo "$MULTIPASSCMD exec k3s-server-${NAME} -- sudo k3s kubectl get nodes"
 echo "Or use kubectl directly"
 echo "kubectl --kubeconfig ${NAME}-kubeconfig.yaml get nodes"
