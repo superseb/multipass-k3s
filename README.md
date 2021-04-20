@@ -20,11 +20,11 @@ This will (defaults):
 
 * Generate random name for your cluster (configurable using `NAME`)
 * Create init-cloud-init file for server to install the first k3s server with embedded etcd (contains --cluster-init to activate embedded etcd)
-* Create one instance for the first server with 2 CPU (`SERVER_CPU_MACHINE`), 10G disk (`SERVER_DISK_MACHINE`) and 1G of memory (`SERVER_MEMORY_MACHINE`) using Ubuntu bionic (`IMAGE`)
+* Create one instance for the first server with 2 CPU (`SERVER_CPU_MACHINE`), 10G disk (`SERVER_DISK_MACHINE`) and 1G of memory (`SERVER_MEMORY_MACHINE`) using Ubuntu focal (`IMAGE`)
 * Create cloud-init file for server to install additional k3s servers with embedded etcd.
 * Create one instance for additional server (configurable using `SERVER_COUNT_MACHINE`)
 * Create cloud-init file for agent to join the cluster.
-* Create one machine (configurable using `AGENT_COUNT_MACHINE`) with 1 CPU (`AGENT_CPU_MACHINE`), 3G disk (`AGENT_DISK_MACHINE`) and 512M of memory (`AGENT_MEMORY_MACHINE`) using Ubuntu bionic (`IMAGE`)
+* Create one machine (configurable using `AGENT_COUNT_MACHINE`) with 1 CPU (`AGENT_CPU_MACHINE`), 3G disk (`AGENT_DISK_MACHINE`) and 512M of memory (`AGENT_MEMORY_MACHINE`) using Ubuntu focal (`IMAGE`)
 * Wait for the nodes to be joined to the cluster
 
 ## Quickstart Ubuntu 20.04 droplet
