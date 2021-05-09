@@ -4,7 +4,7 @@ This script will create a configurable amount of instances using [multipass](htt
 
 ## Requirements
 
-* multipass (See [multipass: Getting it](https://github.com/CanonicalLtd/multipass#getting-it))
+* multipass (See [multipass: Install Multipass](https://github.com/canonical/multipass#install-multipass))
 
 This is tested on MacOS, Ubuntu Linux 20.04 and Windows 10.
 
