@@ -3,8 +3,8 @@
 # Configure your settings
 # Name for the cluster/configuration files
 NAME=""
-# Ubuntu image to use (xenial/bionic)
-IMAGE="focal"
+# Ubuntu image to use
+IMAGE="jammy"
 # How many additional server instances to create
 SERVER_COUNT_MACHINE="0"
 # How many agent instances to create
@@ -133,9 +133,9 @@ EOM
             exit 1
        fi
         echo "Checking for Node k3s-agent-$NAME-$i being registered"
-        $MULTIPASSCMD exec k3s-server-$NAME -- bash -c "until sudo k3s kubectl get nodes --no-headers | grep -c k3s-agent-$NAME-$i >/dev/null; do sleep 2; done" 
+        $MULTIPASSCMD exec k3s-server-$NAME -- bash -c "until sudo k3s kubectl get nodes --no-headers | grep -c k3s-agent-$NAME-$i 2>/dev/null; do sleep 2; done"
         echo "Checking for Node k3s-agent-$NAME-$i being Ready"
-        $MULTIPASSCMD exec k3s-server-$NAME -- bash -c "until sudo k3s kubectl get nodes --no-headers | grep k3s-agent-$NAME-$i | grep -c -v NotReady >/dev/null; do sleep 2; done"
+        $MULTIPASSCMD exec k3s-server-$NAME -- bash -c "until sudo k3s kubectl get nodes --no-headers | grep k3s-agent-$NAME-$i | grep -c -v NotReady 2>/dev/null; do sleep 2; done"
         echo "Node k3s-agent-$NAME-$i is Ready on k3s-server-${NAME}"
     done
 fi
