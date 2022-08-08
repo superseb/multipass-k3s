@@ -26,6 +26,7 @@ This will (defaults):
 * Create cloud-init file for agent to join the cluster.
 * Create one machine (configurable using `AGENT_COUNT_MACHINE`) with 1 CPU (`AGENT_CPU_MACHINE`), 3G disk (`AGENT_DISK_MACHINE`) and 512M of memory (`AGENT_MEMORY_MACHINE`) using Ubuntu focal (`IMAGE`)
 * Wait for the nodes to be joined to the cluster
+* Optionally merge the generated kubeconfig with the existing $KUBECONFIG (`MERGE_KUBECONFIG`)
 
 ## Quickstart Ubuntu 20.04 droplet
 
@@ -46,5 +47,7 @@ The files that are created are:
 * `$NAME-cloud-init.yaml`
 * `$NAME-kubeconfig.yaml`
 * `$NAME-kubeconfig-orig.yaml`
+* `$NAME-kubeconfig-backup.yaml` (if `MERGE_KUBECONFIG` is set)
+* `$NAME-kubeconfig-merged.yaml` (if `MERGE_KUBECONFIG` is set)
 
 You can clean up the instances by running `multipass delete k3s-server-$NAME-1 --purge` and `multipass delete k3s-agent-$NAME-{1,2,3}` or (**WARNING** this deletes and purges all instances): `multipass delete --all --purge`
