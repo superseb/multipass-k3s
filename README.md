@@ -6,7 +6,7 @@ This script will create a configurable amount of instances using [multipass](htt
 
 * multipass (See [multipass: Install Multipass](https://github.com/canonical/multipass#install-multipass))
 
-This is tested on MacOS, Ubuntu Linux 20.04 and Windows 10.
+This is tested on MacOS and Ubuntu Linux 22.04.
 
 ## Running it
 
@@ -28,13 +28,13 @@ This will (defaults):
 * Wait for the nodes to be joined to the cluster
 * Optionally merge the generated kubeconfig with the existing $KUBECONFIG (`MERGE_KUBECONFIG`)
 
-## Quickstart Ubuntu 20.04 droplet
+## Quickstart Ubuntu 22.04 droplet
 
 ```
 sudo snap install multipass
 wget https://raw.githubusercontent.com/superseb/multipass-k3s/master/multipass-k3s.sh
 bash multipass-k3s.sh
-curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+curl -Lo /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 chmod +x /usr/local/bin/kubectl
 kubectl --kubeconfig *-kubeconfig.yaml get nodes
 ```
